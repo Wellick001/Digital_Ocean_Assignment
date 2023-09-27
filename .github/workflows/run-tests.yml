@@ -1,0 +1,36 @@
+name: Run tests and deploy
+
+# Run this workflow whenever something new is pushed.
+on: push
+
+jobs:
+  run-tests:
+    runs-on: ubuntu-20.04
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v2
+      - name: Setup Python
+        uses: actions/setup-python@v2
+        # Specify some input for this particular action
+        with:
+          python-version: '3.8.6'
+      - name: Install Dependencies
+        run: pip install -r requirements.txt
+      - name: Run tests
+        run: pytest
+  
+  deploy:
+    needs: run-tests
+    runs-on: ubuntu-latest
+    steps:
+      - name: Deploy Flask app
+        uses: appleboy/ssh-action@v0.1.4
+        with:
+          host: ${{ secrets.SSH_HOST }}
+          key: ${{ secrets.SSH_KEY }}
+          username: ${{ secrets.SSH_USERNAME }}
+          script: |
+            pip install gunicorn flask
+            cd /home/winc-cd
+            git pull
+            systemctl restart winc-cd
